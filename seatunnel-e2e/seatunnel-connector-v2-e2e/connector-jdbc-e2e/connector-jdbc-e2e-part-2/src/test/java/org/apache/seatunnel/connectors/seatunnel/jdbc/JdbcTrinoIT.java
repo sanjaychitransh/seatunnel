@@ -39,6 +39,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -50,11 +51,15 @@ public class JdbcTrinoIT extends TestSuiteBase implements TestResource {
 
     private static final String DOCKER_IMAGE = "trinodb/trino:352";
     private static final String DRIVER_CLASS = "io.trino.jdbc.TrinoDriver";
-    private static final String HOST = "e2e_tino";
+    private static final String HOST = "e2e_trino";
     private static final String URL = "jdbc:trino://%s:5236";
+    private static final String USER = "root";
 
     private Connection jdbcConnection;
     private GenericContainer<?> dbServer;
+
+    private static final List<String> CONFIG_FILE =
+            Lists.newArrayList("/jdbc_trino_source_and_console .conf");
 
     @BeforeAll
     @Override
@@ -80,6 +85,7 @@ public class JdbcTrinoIT extends TestSuiteBase implements TestResource {
     private void initializeJdbcConnection() throws SQLException {
         Properties properties = new Properties();
         properties.setProperty("user", "trino");
+        properties.setProperty("password", "");
         jdbcConnection =
                 DriverManager.getConnection(String.format(URL, dbServer.getHost()), properties);
     }
@@ -108,7 +114,7 @@ public class JdbcTrinoIT extends TestSuiteBase implements TestResource {
 
     private void assertHasData() {
         try (Statement statement = jdbcConnection.createStatement()) {
-            String sql = String.format("SHOW CATALOGS");
+            String sql = String.format("select * from tpch.tiny.nation");
             ResultSet source = statement.executeQuery(sql);
             Assertions.assertTrue(source.next());
         } catch (SQLException e) {
